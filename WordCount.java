@@ -24,7 +24,9 @@ public class WordCount {
                     ) throws IOException, InterruptedException {
       StringTokenizer itr = new StringTokenizer(value.toString());
 	String regex = "[][(){},.;!?<>%]";
-
+	
+	    //Gets the filename. We need to find a way to create an index of (word, filename, one). Currently it just 
+	    //Outputs (word, one) but word is equivalent to "word filename"
       while (itr.hasMoreTokens()) {
       String fileName = ((org.apache.hadoop.mapreduce.lib.input.FileSplit) context.getInputSplit()).getPath().getName();
 	word.set(itr.nextToken().toLowerCase().replaceAll("[^a-zA-Z ]","") +" "+ fileName); 
