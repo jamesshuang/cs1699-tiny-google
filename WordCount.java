@@ -13,46 +13,98 @@ import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 
 public class WordCount {
-
-  public static class TokenizerMapper
-       extends Mapper<Object, Text, Text, IntWritable>{
-
-    private final static IntWritable one = new IntWritable(1);
+  public static class TokenizerMapper extends Mapper<Object, Text, Text, IIElement>{
+    private final static IIElement element = new IIElement;
     private Text word = new Text();
 
-    public void map(Object key, Text value, Context context
-                    ) throws IOException, InterruptedException {
+    public void map(Object key, Text value, Context context) throws IOException, InterruptedException {
       StringTokenizer itr = new StringTokenizer(value.toString());
-	String regex = "[][(){},.;!?<>%]";
+	    String regex = "[][(){},.;!?<>%]";
 	
-	    //Gets the filename. We need to find a way to create an index of (word, filename, one). Currently it just 
-	    //Outputs (word, one) but word is equivalent to "word filename"
+	    //output of map is word mapped to a IIElement, which contains filename and frequency of word
       while (itr.hasMoreTokens()) {
-      String fileName = ((org.apache.hadoop.mapreduce.lib.input.FileSplit) context.getInputSplit()).getPath().getName();
-	word.set(itr.nextToken().toLowerCase().replaceAll("[^a-zA-Z ]","") +" "+ fileName); 
-	System.out.println(fileName);
-	
-	context.write(word, one);
+        String fileName = ((org.apache.hadoop.mapreduce.lib.input.FileSplit) context.getInputSplit()).getPath().getName();
+	      word.set(itr.nextToken().toLowerCase().replaceAll("[^a-zA-Z ]",""));
+        element.setFilename(fileName);
+        element.setFreq(1); 
+	      context.write(word, element);
       }
     }
   }
 
-  public static class IntSumReducer
-       extends Reducer<Text,IntWritable,Text,IntWritable> {
+  //reducer is not complete
+  public static class IntSumReducer extends Reducer<Text,IIElement,Text,II> {
     private IntWritable result = new IntWritable();
-
-    public void reduce(Text key, Iterable<IntWritable> values,
-                       Context context
-                       ) throws IOException, InterruptedException {
+    public void reduce(Text key, Iterable<IIElement> values, Context context) throws IOException, InterruptedException {
       int sum = 0;
-      for (IntWritable val : values) {
-        sum += val.get();
+      for (IIElement val : values) {
+        sum += val.getFreq();
       }
       result.set(sum);
       context.write(key, result);
     }
   }
-
+  
+  /*
+   * Custome object to store each element in our inverted Index
+   */
+  public static class IIElement implements WritableComparable<IIElement> {
+    private String filename;
+    private int freq;
+    
+    public void setFilename(String filename) {
+      this.filename = filename;
+    }
+    
+    public void setFreq(int freq) {
+      this.freq = freq;
+    }
+    
+    public int getFreq() {
+      return freq;
+    }
+    
+    public String getFilename() {
+      return filename;
+    }
+    
+    public void write(DataOutput out) throws IOException {
+      out.writeUTF(filename);
+      out.writeInt(freq);
+    }
+    
+    public void readFields(DataInput in) throws IOException {
+      filename = in.readUTF();
+      freq = in.readInt();
+    }
+    
+    /*
+     * Compares two elements in the Inverted Index
+     *
+     * @param o the element we want to compare this element to
+     * @return postive int if this object is greater than object being passed, negative int if
+     * less than, and zero is two objects are equals
+     */
+    public int compareTo(IIElement o) {
+      int thisValue = this.freq;
+      int thatValue = o.freq;
+      return (thisValue < thatValue ? -1 : (thisValue==thatValue ? 0 : 1));
+    }
+  }
+  
+  //incomplete
+  public static class II implements WritableComparable<II> {
+    private ArrayList<IIElement> invertedIndex;
+    
+    public void write(DataOutput out) throws IOException {
+      ;
+    }
+    
+    public void readFields(DataInput in) throws IOException {
+      ;
+    }
+  }
+  
   public static void main(String[] args) throws Exception {
     Configuration conf = new Configuration();
     Job job = Job.getInstance(conf, "word count");
