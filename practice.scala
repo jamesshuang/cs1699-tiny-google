@@ -1,6 +1,9 @@
 import java.io._
 import org.apache.commons.io.FileUtils
 import org.apache.spark.SparkContext._
+import org.apache.spark.streaming._
+import org.apache.spark.streaming.StreamingContext._
+import org.apache.hadoop.fs.{FileSystem,Path}
 
 @SerialVersionUID(100L)
 class payload extends Serializable{
@@ -32,31 +35,25 @@ class invertedIndex extends Serializable{
   var grouped : List[(String,payload)] = List()
 
   def init(){
-    val files = getListOfFiles("input/").filter(_.getName.endsWith(".txt"))
-    for (name <- files) {
-      add(name)
+      add()
+  }
+
+  def add(){
+    var files = sc.wholeTextFiles("hdfs://localhost:9000/user/nick/1699/input/*")
+    val a = files.keys
+    for(name <- a.collect()){
+      val orig_text = files.lookup(name)
+      val mapped = sc.parallelize(orig_text)
+      val returnText = mapped.flatMap(l => l.split(' '))
+      .map(_.toLowerCase())
+      .map(word => word.filter(Character.isLetter(_)))
+      .map(word => (word,1))
+      .reduceByKey(_+_)
+      .map(word => (word._1, new payload(word._2, name)))
+      this.grouped = this.grouped ++ returnText.collect().toList
     }
   }
 
-  def add(name: java.io.File){
-    var mapped = sc.textFile("./" + name)
-    .flatMap(l => l.split(' '))
-    .map(_.toLowerCase())
-    .map(word => word.filter(Character.isLetter(_)))
-    .map(word => (word,1))
-    .reduceByKey(_+_).collect
-    .map(word => (word._1, new payload(word._2, name.getName)))
-    this.grouped = this.grouped ++ mapped
-  }
-
-  def getListOfFiles(dir: String):List[File] = {
-    val d = new File(dir)
-    if (d.exists && d.isDirectory) {
-      d.listFiles.filter(_.isFile).toList
-    } else {
-      List[File]()
-    }
-  }
 
   def returnList(word: String){
     val merge = grouped.groupBy(_._1)
@@ -64,10 +61,14 @@ class invertedIndex extends Serializable{
   }
 }
 
+
   //def
 
   //val merge = grouped.groupBy(_._1)
   //println(merge("the"))
 var ii = new invertedIndex()
 ii.init
+
+//val name = readLine("What's your name? ")
+
 ii.returnList("the")
