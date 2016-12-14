@@ -1,3 +1,4 @@
+import java.util.Scanner;
 import java.io.IOException;
 import java.util.StringTokenizer;
 import java.io.*;
@@ -13,109 +14,117 @@ import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 
 public class WordCount {
-  public static class TokenizerMapper extends Mapper<Object, Text, Text, IIElement>{
-    private final static IIElement element = new IIElement;
+
+  public static class TokenizerMapper
+       extends Mapper<Object, Text, Text, IntWritable>{
+
+    private final static IntWritable one = new IntWritable(1);
     private Text word = new Text();
 
-    public void map(Object key, Text value, Context context) throws IOException, InterruptedException {
+    public void map(Object key, Text value, Context context
+                    ) throws IOException, InterruptedException {
       StringTokenizer itr = new StringTokenizer(value.toString());
-	    String regex = "[][(){},.;!?<>%]";
-	
-	    //output of map is word mapped to a IIElement, which contains filename and frequency of word
+        String regex = "[][(){},.;!?<>%]";
+
       while (itr.hasMoreTokens()) {
-        String fileName = ((org.apache.hadoop.mapreduce.lib.input.FileSplit) context.getInputSplit()).getPath().getName();
-	      word.set(itr.nextToken().toLowerCase().replaceAll("[^a-zA-Z ]",""));
-        element.setFilename(fileName);
-        element.setFreq(1); 
-	      context.write(word, element);
+      String fileName = ((org.apache.hadoop.mapreduce.lib.input.FileSplit) context.getInputSplit()).getPath().getName();
+        word.set(itr.nextToken().toLowerCase().replaceAll("[^a-zA-Z ]","") +" "+ fileName);
+        System.out.println(fileName);
+
+        context.write(word, one);
       }
     }
   }
 
-  //reducer is not complete
-  public static class IntSumReducer extends Reducer<Text,IIElement,Text,II> {
-    private IntWritable result = new IntWritable();
-    public void reduce(Text key, Iterable<IIElement> values, Context context) throws IOException, InterruptedException {
+    public static class IntSumReducer
+       extends Reducer<Text,IntWritable,Text, Text> {
+
+    public void reduce(Text key, Iterable<IntWritable> values,
+                       Context context
+                       ) throws IOException, InterruptedException {
       int sum = 0;
-      for (IIElement val : values) {
-        sum += val.getFreq();
+      for (IntWritable val : values) {
+        sum += val.get();
       }
-      result.set(sum);
-      context.write(key, result);
+      String[] parts = (key.toString()).split(" ");
+
+      StringBuilder sb = new StringBuilder(parts[1] + "=>" + Integer.toString(sum));
+      context.write(new Text(parts[0]), new Text(sb.toString()));
     }
   }
-  
-  /*
-   * Custome object to store each element in our inverted Index
-   */
-  public static class IIElement implements WritableComparable<IIElement> {
-    private String filename;
-    private int freq;
-    
-    public void setFilename(String filename) {
-      this.filename = filename;
+	
+	 public static class TokenizerMapper2
+       extends Mapper<Object, Text, Text, Text>{
+    private Text word = new Text();
+    private Text word2 = new Text();
+    public void map(Object key, Text value, Context context
+                    ) throws IOException, InterruptedException {
+
+    StringTokenizer itr = new StringTokenizer(value.toString());
+      int count = 0;
+
+      while (itr.hasMoreTokens()) {
+        if(count == 0){
+                word.set(itr.nextToken());
+                count++;
+        }else if(count == 1){
+
+                word2.set(itr.nextToken());
+                context.write(word, word2);
+                count--;
+
+        }
+      }
+      }
     }
-    
-    public void setFreq(int freq) {
-      this.freq = freq;
-    }
-    
-    public int getFreq() {
-      return freq;
-    }
-    
-    public String getFilename() {
-      return filename;
-    }
-    
-    public void write(DataOutput out) throws IOException {
-      out.writeUTF(filename);
-      out.writeInt(freq);
-    }
-    
-    public void readFields(DataInput in) throws IOException {
-      filename = in.readUTF();
-      freq = in.readInt();
-    }
-    
-    /*
-     * Compares two elements in the Inverted Index
-     *
-     * @param o the element we want to compare this element to
-     * @return postive int if this object is greater than object being passed, negative int if
-     * less than, and zero is two objects are equals
-     */
-    public int compareTo(IIElement o) {
-      int thisValue = this.freq;
-      int thatValue = o.freq;
-      return (thisValue < thatValue ? -1 : (thisValue==thatValue ? 0 : 1));
+  public static class IntSumReducer2
+       extends Reducer<Text,Text,Text, Text> {
+
+    public void reduce(Text key, Iterable<Text> values,
+                       Context context
+                       ) throws IOException, InterruptedException {
+ Text sum = new Text("");
+      StringBuilder sb = new StringBuilder();
+
+      for (Text val : values) {
+        if(sb.toString() == ""){
+                sb.append(val);
+        }else{
+              	sb.append("," + val);
+        }
+      }
+
+      context.write(key, new Text(sb.toString()));
     }
   }
-  
-  //incomplete
-  public static class II implements WritableComparable<II> {
-    private ArrayList<IIElement> invertedIndex;
-    
-    public void write(DataOutput out) throws IOException {
-      ;
-    }
-    
-    public void readFields(DataInput in) throws IOException {
-      ;
-    }
-  }
-  
   public static void main(String[] args) throws Exception {
     Configuration conf = new Configuration();
     Job job = Job.getInstance(conf, "word count");
     job.setJarByClass(WordCount.class);
     job.setMapperClass(TokenizerMapper.class);
-    job.setCombinerClass(IntSumReducer.class);
     job.setReducerClass(IntSumReducer.class);
+    job.setMapOutputKeyClass(Text.class);
+    job.setMapOutputValueClass(IntWritable.class);
     job.setOutputKeyClass(Text.class);
-    job.setOutputValueClass(IntWritable.class);
+    job.setOutputValueClass(Text.class);
     FileInputFormat.addInputPath(job, new Path(args[0]));
     FileOutputFormat.setOutputPath(job, new Path(args[1]));
-    System.exit(job.waitForCompletion(true) ? 0 : 1);
+    job.waitForCompletion(true);
+    Configuration conf2 = new Configuration();
+    Job job2 = Job.getInstance(conf2);
+    job2.setJarByClass(WordCount.class);
+    job2.setJobName("Word Count");
+
+    FileInputFormat.addInputPath(job2, new Path(args[1]));
+    FileOutputFormat.setOutputPath(job2,new Path(args[1] + "_2"));
+    job2.setMapperClass(TokenizerMapper2.class);
+    job2.setReducerClass(IntSumReducer2.class);
+    job2.setMapOutputKeyClass(Text.class);
+    job2.setMapOutputValueClass(Text.class);
+    job2.setOutputKeyClass(Text.class);
+    job2.setOutputValueClass(Text.class);
+    job2.waitForCompletion(true);
+    System.exit(job2.waitForCompletion(true) ? 0 : 1);
+
   }
 }
