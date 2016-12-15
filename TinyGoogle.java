@@ -133,8 +133,7 @@ public class TinyGoogle {
     System.out.println("Welcome to Tiny Google!");
     System.out.print("Please enter your hadoop username (same as Pitt email): ");
     String user = in.next();
-    System.out.print("Please enter the directory of your MapReduce output in HDFS: ");
-    String dir = in.next();
+    String dir = args[0];
     
     //create path of our output directory in hdfs
     Path p = new Path("hdfs://had6110.cs.pitt.edu:8020/user/" + user + "/" + dir + "/part-r-00000");
