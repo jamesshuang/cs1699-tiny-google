@@ -143,7 +143,7 @@ public class WordCount {
     }
     
     public String toString() {
-      return "(" + filename + " " + freq + ") ";
+      return filename + " " + freq + " ";
     }
     
   }
