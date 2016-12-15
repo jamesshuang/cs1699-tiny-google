@@ -100,17 +100,26 @@ public class TinyGoogle {
   public static void main(String[] args) throws Exception {
     Scanner in = new Scanner(System.in);
     System.out.println("Welcome to Tiny Google!");
+    System.out.print("Please enter your hadoop username (same as Pitt email): ");
+    String user = in.next();
     System.out.print("Please enter the directory of your MapReduce output in HDFS: ");
     String dir = in.next();
     
     //create path of our output directory in hdfs
-    Path p = new Path("hdfs://had6110.cs.pitt.edu:8020/user/jah245/" + dir + "/part-r-00000");
+    Path p = new Path("hdfs://had6110.cs.pitt.edu:8020/user/" + user + "/" + dir + "/part-r-00000");
     System.out.println("Loading input from: " + p.toString());
     
     FileSystem fs = FileSystem.get(new Configuration());
     
-    //read file from specified path into buffer
-    BufferedReader br = new BufferedReader(new InputStreamReader(fs.open(p)));
+    BufferedReader br = null;
+    try {
+      //read file from specified path into buffer
+      br = new BufferedReader(new InputStreamReader(fs.open(p)));
+    } catch(Exception e) {
+      System.out.println("Error reading from output directory");
+      System.out.println(e);
+      System.exit(1);
+    }
     
     //initalize our InvertedIndex object that will be used to store and query our words
     InvertedIndex invertedIndex = new InvertedIndex();
@@ -152,7 +161,7 @@ public class TinyGoogle {
         ArrayList<IIElement> word = invertedIndex.get(key);
         
         //incase the word does not appear in any of the books
-        if (word.size() == 0) {
+        if (word == null) {
           System.out.println("Word could not be found");
           continue;
         }
