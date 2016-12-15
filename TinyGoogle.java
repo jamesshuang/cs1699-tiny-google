@@ -96,7 +96,8 @@ public class TinyGoogle {
     }
 
   }
-
+	
+//Used to sort the Map in an order to be used for output 
     private static Map<String, Integer> sortByValue(Map<String, Integer> unsortMap) {
 
         
@@ -194,20 +195,24 @@ public class TinyGoogle {
         }
       }
       else if (option == 2) {
+	//Used for user interaction 
         System.out.print("Enter word you would like to search: ");
         String key = in.nextLine();
 
-        //retreive all the IIElements assoicated with our word
-
+        //retreive all the IIElements assoicated with our word(s)
         ArrayList<ArrayList<IIElement>> storedWords = new ArrayList<ArrayList<IIElement>>();
+	//Split the keywords so that they can be found. 
         String[] words = key.split(" ");
         System.out.println("\nReturning the words from phrase: " + key);
+	//Adds the IIElements to the storedWords ArrayList
         for(int i = 0; i < words.length; i++){
           ArrayList<IIElement> word = invertedIndex.get(words[i]);
           storedWords.add(word);
         }
 
+	//Create a map to to combine our words from the arraylist
         Map<String,Integer> m1 = new HashMap<String, Integer>();
+	//For loop to go through our IIElements in storedWords 
         for(ArrayList<IIElement> word: storedWords){
           //incase the word does not appear in any of the books
           if (word.size() == 0) {
@@ -215,13 +220,16 @@ public class TinyGoogle {
             continue;
           }
 
-          
+          //Get the IIElement for the specific word and then loop through all of the filenames and frequencies 
           for (int i = 0; i < word.size(); i++) {
+	    //Get the filenames and frequencies for one of the IIElements 
             IIElement e = word.get(i);
             
+            //Check if the filename has already been entered into our hashmap
+            //If it has we add the current IIElement frequency with the already established frequency
             if(m1.containsKey(e.getFilename())){
               m1.put(e.getFilename(), m1.get(e.getFilename()) + e.getFreq());
-            }else{
+            }else{//If the filename is not in the map then we add the filename to it then establish its frequency
               m1.put(e.getFilename(), e.getFreq());
             }
           }
@@ -229,6 +237,7 @@ public class TinyGoogle {
 
 	System.out.println("\nHere are the occurses of your phrase " + key + "\n");
 
+	//Send to sortByValue to get our sorted hashmap than print it out using printMap
         m1 = sortByValue(m1);
         printMap(m1);
 
