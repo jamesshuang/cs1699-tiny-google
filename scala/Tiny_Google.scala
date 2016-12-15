@@ -18,7 +18,7 @@ def getIndex(){
   var tempRDD : RDD[(String, Double)] = sc.parallelize(List((" ",0.0)))
 
   //Reads the keywords in 
-  val keyword = readLine("What is the word you are looking for? ").toString
+  val keyword = readLine("\nWhat is the word you are looking for? ").toString
   //println(keyword)
   //Splits the multiple keywords so that they can be searched for in our "super" wordRDD	
   val keywords = keyword.split("\\s+")
@@ -35,7 +35,7 @@ def getIndex(){
 	
   //Reduce all the keys so we combine the filenames that could occur from multiple keywords. There is 
   //a negative sign in front of x._2 to sort our list in ascending order instead of descending. 
-  tempRDD = tempRDD.reduceByKey(_+_).sortBy(x => -x._2)
+  tempRDD = tempRDD.reduceByKey(_+_).filter(_._2 != 0).sortBy(x => -x._2)
   println("\n\nThe returning result for '" + keyword + "' is the following: ")
 	
   //Used to print out our words 
