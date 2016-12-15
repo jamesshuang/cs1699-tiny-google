@@ -87,6 +87,8 @@ def smallNumber(files: RDD[String]){
 
 
 }
+println("\nWelcome to Tiny Google! The Files are being loaded in!\n\n")
+
 	var files = sc.wholeTextFiles("hdfs://had6110.cs.pitt.edu:8020/user/chatree/CS1699/Books/*")
 	var a = files.keys
 	for(name <- a.collect()){
@@ -102,11 +104,11 @@ def smallNumber(files: RDD[String]){
 	  wordRDD = wordRDD.union(toBeAdded)
 	}
 	files.unpersist()	
-	
+
+println("\nWelcome to Tiny Google! The Files have been loaded in!!\n\n")	
 
 var keyword : String = "regular"
 while(keyword.equals("regular")){
-	println(keyword)
 	getIndex()
 	keyword = readLine("\nEnter 'regular' to go again with the word search, 'advanced' to run our advanced queries, anything else to stop: ")
 	while(keyword.equals("advanced")){
