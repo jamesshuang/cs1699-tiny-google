@@ -36,7 +36,6 @@ public class WordCount {
     }
   }
 
-  //reducer is not complete
   public static class IntSumReducer extends Reducer<Text,IIElement,Text,Text> {
     public void reduce(Text key, Iterable<IIElement> values, Context context) throws IOException, InterruptedException {
       int sum = 0;
