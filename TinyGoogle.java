@@ -133,8 +133,9 @@ public class TinyGoogle {
     System.out.println("Welcome to Tiny Google!");
     System.out.print("Please enter your hadoop username (same as Pitt email): ");
     String user = in.next();
-    String dir = args[0];
-    
+    //System.out.print("Please enter the directory of your MapReduce output in HDFS: ");
+    //String dir = in.next();
+    String dir = "wc_output";
     //create path of our output directory in hdfs
     Path p = new Path("hdfs://had6110.cs.pitt.edu:8020/user/" + user + "/" + dir + "/part-r-00000");
     System.out.println("Loading input from: " + p.toString());
@@ -155,6 +156,9 @@ public class TinyGoogle {
     InvertedIndex invertedIndex = new InvertedIndex();
 
     //go through our buffer and load all words into our inverted index
+    long start = new Date().getTime();
+   
+    
     while (br.ready()) {
       String line = br.readLine();
       line = line.replace("\t", " ");
@@ -173,6 +177,10 @@ public class TinyGoogle {
       invertedIndex.put(key, indexes);
     }
 
+    
+    long end = new Date().getTime();
+    System.out.println("Job took "+(end-start) + "milliseconds");
+
     //At this point, all our words are loaded into our invertedIndex.
     //Our words are ready to be queried
     while(true) {
@@ -184,10 +192,13 @@ public class TinyGoogle {
       int option = in.nextInt();
       in.nextLine();
 
-
+      
       if (option == 1) {
         System.out.print("Enter word you would like to search: ");
         String key = in.next();
+	
+	start = new Date().getTime();
+    
 
         //retreive all the IIElements assoicated with our word
         ArrayList<IIElement> word = invertedIndex.get(key);
@@ -197,18 +208,22 @@ public class TinyGoogle {
           System.out.println("Word could not be found");
           continue;
         }
-
+  
+ 
         System.out.println("Here are the occurances of " + key + "\n");
         for (int i = 0; i < word.size(); i++) {
           IIElement e = word.get(i);
           System.out.println(e.getFilename() + " -> " + e.getFreq());
         }
+      
+        end = new Date().getTime();
+        System.out.println("Job	took "+(end-start) + "milliseconds");
       }
-      else if (option == 2) {
+	else if (option == 2) {
 	//Used for user interaction 
         System.out.print("Enter word you would like to search: ");
         String key = in.nextLine();
-
+	start = new Date().getTime();
         //retreive all the IIElements assoicated with our word(s)
         ArrayList<ArrayList<IIElement>> storedWords = new ArrayList<ArrayList<IIElement>>();
 	//Split the keywords so that they can be found. 
@@ -245,11 +260,15 @@ public class TinyGoogle {
           }
         }
 
+
 	System.out.println("\nHere are the occurses of your phrase " + key + "\n");
 
 	//Send to sortByValue to get our sorted hashmap than print it out using printMap
         m1 = sortByValue(m1);
         printMap(m1);
+
+	end = new Date().getTime();
+	System.out.println("Job took "+(end-start) + "milliseconds");
 
 	
       }

@@ -1,6 +1,7 @@
 import java.io.IOException;
 import java.util.StringTokenizer;
 import java.io.*;
+import java.util.Date;
 import org.apache.hadoop.mapreduce.InputSplit;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
@@ -148,6 +149,7 @@ public class WordCount {
   }
   
   public static void main(String[] args) throws Exception {
+    Date date = new Date();
     Configuration conf = new Configuration();
     Job job = Job.getInstance(conf, "word count");
     job.setJarByClass(WordCount.class);
@@ -164,6 +166,10 @@ public class WordCount {
     
     FileInputFormat.addInputPath(job, new Path(args[0]));
     FileOutputFormat.setOutputPath(job, new Path(args[1]));
-    System.exit(job.waitForCompletion(true) ? 0 : 1);
+    long start = new Date().getTime(); 
+    boolean status = job.waitForCompletion(true); 
+    long end = new Date().getTime(); 
+    System.out.println("Job took "+(end-start) + "milliseconds");
+    
   }
 }
