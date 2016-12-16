@@ -11,6 +11,15 @@ import org.apache.hadoop.fs.{FileSystem,Path}
 //The Global RDD that holds our Word, Filename, and Frequency
 var wordRDD : RDD[(String, String, Double)] = sc.parallelize(List((" "," ", 0.0)))
 
+//A timing function for the spark application
+def time[R](block: => R): R = {
+    val t0 = System.nanoTime()
+    val result = block    // call-by-name
+    val t1 = System.nanoTime()
+    println("Elapsed time: " + (t1 - t0) + "ns")
+    result
+}
+
 //Get index shows the outpout of a keyword search and lists them in ranking order. 
 //It can take in a single keyword or multiple keywords. 
 def getIndex(){
@@ -25,6 +34,7 @@ def getIndex(){
   //println(keywords)
 	
   //Look through each keywords that was displayed
+time { 
   for(key <- keywords){
     //Uses .filter to get only the lists from our wordRDD that match the current keyword
     //Then the mapper creates a map that is a tuple with just the doc_id and the frequency
@@ -32,7 +42,7 @@ def getIndex(){
     //Union this queryRDD with our created tempRDD, do this so we can store all the keywords. 	  
     tempRDD = tempRDD.union(queryRDD)
   }
-	
+}	
   //Reduce all the keys so we combine the filenames that could occur from multiple keywords. There is 
   //a negative sign in front of x._2 to sort our list in ascending order instead of descending. 
   tempRDD = tempRDD.reduceByKey(_+_).filter(_._2 != 0).sortBy(x => -x._2)
@@ -124,6 +134,7 @@ println("\nWelcome to Tiny Google! The Files are being loaded in!\n\n")
 	var files = sc.wholeTextFiles("hdfs://had6110.cs.pitt.edu:8020/user/chatree/CS1699/Books/*")
 	//Gets the keys from our files RDD 
 	var a = files.keys
+time { 
 	for(name <- a.collect()){ //Look through all our files 
 	  val orig_text = files.lookup(name) //Get the text from our files 
 	  val mapped = sc.parallelize(orig_text) //Push our text into an rdd
@@ -138,6 +149,7 @@ println("\nWelcome to Tiny Google! The Files are being loaded in!\n\n")
 	  //Union our adding RDD to our global RDD so all files will be in single RDD 
 	  wordRDD = wordRDD.union(toBeAdded)
 	}
+}
 	//Get rid of the files variable in memory to create a better efficiency for the program. 
 	//wholeTextFiles takes up a lot of space 
 	files.unpersist()	
@@ -156,19 +168,19 @@ var keyword : String = "regular"
 		
 		var enterText = readLine("\nEnter the option here: ")
 		if(enterText.equals("BigData")){
-			BigData()
+			time {BigData()}
 
 		}else if(enterText.equals("theNumber")){
-			theNumber()
+			time {theNumber()}
 
 		}else if(enterText.equals("bigNumber")){
-			bigNumber()
+			time {bigNumber()}
 
 		}else if(enterText.equals("smallNumber")){
-			smallNumber(a)
+			time {smallNumber(a)}
 			
 		}else if(enterText.equals("getIndex")){
-			getIndex()
+			time {getIndex()}
 			
 		}
 		keyword = readLine("\nEnter 'run' to run the program or 'stop' to stop the program: ")
